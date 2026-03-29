@@ -1040,20 +1040,33 @@ This is where you decide the architecture. Everything after this phase — Googl
 
 ### 8.1: Decide Your Architecture
 
-**Single agent (simplest):** One person, one agent, one CLAUDE.md. Skip to 8.3.
+**Single agent (simplest):** One person, one agent, one CLAUDE.md. Skip to 8.4.
 
 **Multi-agent (two+ people sharing the Mac):** Each person gets their own agent with a different name, persona, memory, and channels. They share the same Claude Max subscription and hardware. This is what you want if, for example, one person needs a Chief of Staff and the other needs a VC Analyst.
 
 **How it works:** Claude Code reads its `CLAUDE.md` from its **working directory**. So if Agent A runs from `~/` and Agent B runs from `~/peter/`, they load completely different instructions and behave as completely different agents — different name, different tone, different priorities, different memory.
 
-### 8.2: Create the Directory Structure (Multi-Agent)
+### 8.2: Who Does What (Multi-Agent)
 
-> **Single agent?** Skip this step — you already have `~/` from Phase 4.1.
+This is the key to understanding the multi-agent setup. **You** (Person A) do the infrastructure. **Person B** shapes their own agent by talking to it.
 
-Create a fully separate workspace for each additional agent:
+| Step | Who | What |
+|---|---|---|
+| 1 | You | Create Person B's directory structure |
+| 2 | You | Write a **bootstrap CLAUDE.md** — a minimal starter file that tells the agent to ask Person B questions |
+| 3 | You | Create Person B's Telegram bot via @BotFather |
+| 4 | You | Connect the Telegram bot to Person B's directory |
+| 5 | You | Set up the launchd service to keep it running |
+| 6 | You | Send Person B the Telegram bot link |
+| 7 | Person B | Chats with their bot — it asks them how they want it to work |
+| 8 | Person B | The agent writes its own CLAUDE.md, identity.md, and memory based on their answers |
+
+**You build the house. They decorate it.**
+
+### 8.3: Create Person B's Directory Structure
 
 ```bash
-# Agent B's workspace (replace "peter" with the person's name)
+# Replace "peter" with the person's name throughout
 mkdir -p ~/peter
 mkdir -p ~/peter/work
 mkdir -p ~/peter/teammates
@@ -1061,22 +1074,22 @@ mkdir -p ~/peter/logs
 mkdir -p ~/peter/diary
 ```
 
-**The file tree should look like this:**
+**The full file tree looks like this:**
 
 ```
-~/                                  ← Agent A's home (e.g., "Talbot")
-├── CLAUDE.md                       ← Agent A's operations manual
-├── identity.md                     ← Agent A's personality
-├── teammates/                      ← Shared or Agent A's team info
+~/                                  ← Person A's agent (e.g., "Talbot")
+├── CLAUDE.md                       ← Person A's operations manual
+├── identity.md                     ← Person A's personality
+├── teammates/
 ├── work/
 ├── diary/
 ├── logs/
 └── Projects/slack-bot/             ← Shared Slack bot infrastructure
 
-~/peter/                            ← Agent B's home (e.g., "Atlas")
-├── CLAUDE.md                       ← Agent B's operations manual
-├── identity.md                     ← Agent B's personality
-├── teammates/                      ← Agent B's team info
+~/peter/                            ← Person B's agent (name TBD by them)
+├── CLAUDE.md                       ← Bootstrap file → later rewritten by the agent
+├── identity.md                     ← Written by the agent after talking to Person B
+├── teammates/
 ├── work/
 ├── diary/
 └── logs/
@@ -1085,34 +1098,21 @@ mkdir -p ~/peter/diary
 ├── settings.json                   ← Shared Claude Code config
 └── projects/
     ├── -Users-YOUR_USERNAME/
-    │   └── memory/                 ← Agent A's memory
+    │   └── memory/                 ← Person A's memory
     │       └── MEMORY.md
     └── -Users-YOUR_USERNAME-peter/
-        └── memory/                 ← Agent B's memory
+        └── memory/                 ← Person B's memory
             └── MEMORY.md
 ```
 
-Each agent has its own:
-- `CLAUDE.md` — completely different instructions, role, and behavior
-- `identity.md` — different name, personality, and principles
-- `memory/` — separate persistent memory (conversations, preferences, learned context)
-- `teammates/` — can be shared or different per agent
-- `logs/` — separate log files for debugging
+### 8.4: Write Person A's CLAUDE.md (Your Agent)
 
-Both agents share:
-- The same Claude Max subscription (same rate limit)
-- The same Google Calendar (both can see shared calendars)
-- The same hardware and installed tools
-- Household items (logistics, shared calendar events, bill tracker)
+**If single agent:** This is the only CLAUDE.md you need.
 
-### 8.3: Create the CLAUDE.md Files
-
-**What this is:** The operations manual. Claude Code reads it at the start of every conversation. It tells the agent who it is, what tools it has, and how to behave. This is the most important file — it defines everything.
-
-**For each agent**, create a `CLAUDE.md` in that agent's home directory. Include:
+Create `~/CLAUDE.md` with your agent's full operations manual. Include:
 
 - The agent's name and role
-- Who it works for (which person)
+- Who it works for
 - Company context
 - Team roster (names, Slack user IDs, roles)
 - How to communicate (Slack, email, Telegram)
@@ -1125,92 +1125,144 @@ Both agents share:
 
 Use the template at [github.com/nityeshaga/claude-home-base](https://github.com/nityeshaga/claude-home-base).
 
-> **Shortcut:** Open Claude Code in each agent's directory and tell it: "Ask me questions about my team, my company, and how I want you to behave — then write your own CLAUDE.md, identity.md, and origin story."
-
-**Example: Agent A (Chief of Staff)**
+> **Shortcut:** Open Claude Code and tell it: "Ask me questions about my team, my company, and how I want you to behave — then write your own CLAUDE.md, identity.md, and origin story."
 
 ```bash
 cd ~/
 claude
-# Tell it: "You are Talbot, Chief of Staff to Natalia Quintero.
+# Tell it: "You are [Agent Name], Chief of Staff to [Your Name].
 # Ask me questions and write your CLAUDE.md."
 ```
 
-**Example: Agent B (VC Analyst)**
+### 8.5: Write Person B's Bootstrap CLAUDE.md
 
-```bash
-cd ~/peter/
-claude
-# Tell it: "You are [Agent Name], a VC analyst for Peter Boyce II
-# at Stellation Venture Capital. Ask me questions and write your CLAUDE.md."
-```
+> **Single agent?** Skip to 8.7.
 
-**Multi-agent: Shared context section.** Both CLAUDE.md files should include a shared context block so each agent knows about the other and handles crossover items:
+This is NOT Person B's final CLAUDE.md. This is a **starter file** — just enough for the agent to introduce itself and ask Person B how they want it to work. Person B will shape the agent through conversation, and the agent will rewrite this file based on their answers.
+
+Create `~/peter/CLAUDE.md`:
 
 ```markdown
-## Shared Items Protocol
-- Google Calendar: P&N shared calendar has joint events — check for conflicts
-- Leo (the dog): if both people have evening events, flag the coverage gap immediately
-- Bills: household bills tracked in [shared location] — either agent can surface them
-- When in doubt about the other person's schedule, check their calendar directly
-- The other agent is [Name], running from [~/path/]. You share the same Mac but have
-  separate memory, identity, and instructions. Do not read the other agent's memory.
+# New Agent — Assistant to [Person B's Name]
+
+You are a brand new AI agent running on a dedicated Mac. [Person B's Name]
+is your user. You don't have a name or personality yet — they will shape you.
+
+## About Your User
+- **Name:** [Person B's full name]
+- **Role:** [Their role, e.g., "Managing Partner at Stellation Venture Capital"]
+- **Location:** [Where they're based]
+- **Context:** [1-2 sentences about what they do]
+
+## Your First Conversation
+
+When [Person B's Name] first messages you, introduce yourself warmly and
+explain that you're a new AI agent set up on their Mac, ready to be
+customized. Then ask these questions (one or two at a time, conversationally
+— don't dump them all at once):
+
+1. **What should I call myself?** Pick a name for me.
+2. **What's my primary role?** (VC analyst, chief of staff, research
+   assistant, deal sourcer, etc.)
+3. **What should I prioritize?** What are the top things you want me
+   tracking and managing for you?
+4. **How do you like to communicate?** (Brief bullets vs. detailed
+   analysis? Casual vs. formal? How often should I check in?)
+5. **What does a typical day look like for you?** (So I can structure
+   briefings around your rhythm)
+6. **Morning brief — what do you want in it?** (Deal flow? Calendar?
+   Portfolio updates? News?)
+7. **Anything I should never do?** (Boundaries, pet peeves, things
+   that waste your time)
+
+## After They Answer
+
+Once you have enough to work with, tell them: "OK, I'm going to write
+my own operating manual based on what you've told me. Give me a moment."
+
+Then:
+1. Write a complete `~/peter/CLAUDE.md` with their preferences — modeled
+   on a thorough executive assistant operations manual
+2. Write `~/peter/identity.md` with the name and personality they chose
+3. Save key preferences to memory
+
+After writing, summarize what you set up and tell them: "You can change
+any of this anytime — just tell me to update my instructions."
+
+## Shared Context
+- This Mac is shared with another agent running from ~/
+- Google Calendar is shared — you can see joint events on the P&N calendar
+- If both users have evening events on the same night, flag it (there's
+  a dog named Leo who needs coverage)
+- You have separate memory from the other agent — don't read ~/CLAUDE.md
+
+## Tools Available
+- Telegram (your primary channel)
+- Google Calendar, Gmail, Drive (via MCP and gws CLI)
+- File system access on this Mac
+- Web browsing and research
+- GitHub
 ```
 
-### 8.4: Create Identity Files
+> **Customize the bracketed sections** with Person B's actual details before saving. The more context you give the bootstrap file, the better the first conversation will be.
 
-For each agent, create `identity.md` in its home directory — personality and principles. Keep it short:
+### 8.6: Create Person A's Identity and Memory
 
-- What role does it play?
-- How does it communicate?
-- What does it care about?
-
-### 8.5: Create Teammates Directories
+For your agent:
 
 ```bash
-# Agent A
-mkdir -p ~/teammates
+# Identity file
+# Create ~/identity.md with your agent's personality and principles
 
-# Agent B (if multi-agent)
-mkdir -p ~/peter/teammates
-```
-
-Create `teammates.md` in each with authority levels and privacy rules. Create individual files for each person (e.g., `natalia.md`, `peter.md`) with their name, Slack ID, role, and communication preferences.
-
-> **Multi-agent note:** Teammates files can be shared (symlinked) or separate. If each agent only works with its own person's team, keep them separate. If both agents need to know about both people, share them.
-
-### 8.6: Set Up Memory
-
-```bash
-# Agent A's memory
+# Memory
 mkdir -p ~/.claude/projects/-Users-YOUR_USERNAME/memory
 touch ~/.claude/projects/-Users-YOUR_USERNAME/memory/MEMORY.md
+```
 
-# Agent B's memory (if multi-agent — replace YOUR_USERNAME and "peter")
+### 8.7: Create Person B's Memory Directory
+
+> **Single agent?** Skip this.
+
+```bash
+# Person B's memory (Claude Code maps this automatically from WorkingDirectory)
 mkdir -p ~/.claude/projects/-Users-YOUR_USERNAME-peter/memory
 touch ~/.claude/projects/-Users-YOUR_USERNAME-peter/memory/MEMORY.md
 ```
 
 > **How Claude Code maps memory:** The memory path is derived from the working directory. When Claude Code runs from `~/`, it uses `~/.claude/projects/-Users-YOUR_USERNAME/memory/`. When it runs from `~/peter/`, it uses `~/.claude/projects/-Users-YOUR_USERNAME-peter/memory/`. This is automatic — you just need to create the directories.
 
-Memory starts empty and builds over time as each agent learns its person's preferences, tracks tasks, and logs context.
+### 8.8: Create Teammates Directories
 
-### 8.7: Set Up Telegram for Each Agent (Multi-Agent)
+```bash
+# Person A
+mkdir -p ~/teammates
+# Create ~/teammates/teammates.md with authority levels and privacy rules
+# Create individual files for each person (natalia.md, peter.md, etc.)
 
-Each agent needs its own Telegram bot. If you already set up Telegram in Phase 5B, that's Agent A's bot. Now create Agent B's:
+# Person B (if multi-agent)
+mkdir -p ~/peter/teammates
+```
+
+> **Multi-agent note:** Teammates files can be shared (symlinked) or separate. If each agent only works with its own person's team, keep them separate. If both agents need to know about both people, share them.
+
+### 8.9: Set Up Telegram for Person B's Agent
+
+> **Single agent?** Skip this — you already set up Telegram in Phase 5B.
+
+Person B needs their own Telegram bot. Create it:
 
 1. Open Telegram → @BotFather → `/newbot`
-2. Pick a name and username for Agent B's bot (must end in `bot`)
+2. Pick a name and username for Person B's bot (must end in `bot`)
 3. Save the token
 
-Configure Agent B's Telegram in its directory:
+Connect the bot to Person B's directory:
 
 ```bash
 cd ~/peter
 claude --channels plugin:telegram@claude-plugins-official
 ```
 
-Enter Agent B's bot token when prompted. Complete the pairing flow. Then create the launchd service:
+Enter Person B's bot token when prompted. Complete the pairing flow. Then create the launchd service:
 
 ```bash
 nano ~/Library/LaunchAgents/com.claude.peter-telegram.plist
@@ -1251,40 +1303,48 @@ nano ~/Library/LaunchAgents/com.claude.peter-telegram.plist
 </plist>
 ```
 
-**The critical line:** `WorkingDirectory` points to `~/peter/`, so this Claude Code instance reads `~/peter/CLAUDE.md` and saves to `~/peter/`'s memory path. That's what makes it a completely different agent.
+**The critical line:** `WorkingDirectory` points to `~/peter/`. This is what makes Claude Code read `~/peter/CLAUDE.md` instead of `~/CLAUDE.md` — turning it into a completely different agent.
 
 ```bash
 launchctl load ~/Library/LaunchAgents/com.claude.peter-telegram.plist
 ```
 
-### 8.8: Rate Limit Considerations (Multi-Agent)
+### 8.10: Send Person B Their Bot
+
+Send Person B a link to their Telegram bot. Tell them:
+
+> "I set up an AI agent for you. Open this Telegram bot and start chatting — it'll ask you how you want it to work, what to call it, and what to prioritize. It'll build itself around your answers."
+
+That's it. From this point, Person B shapes their own agent through conversation.
+
+### 8.11: Rate Limit Considerations (Multi-Agent)
 
 Both agents share one Claude Max subscription. At $200/month:
 - Two concurrent Opus sessions work fine for normal use
 - Heavy parallel use (both agents doing long tasks simultaneously) may hit rate limits
 - If this happens regularly, upgrade to Max 5x ($100/month more) for 5x the throughput
 
-### 8.9: Verify the Architecture
+### 8.12: Verify the Architecture
 
 Before moving on to Phase 9, test that both agents work independently:
 
-**Agent A:**
+**Person A's agent:**
 ```bash
 cd ~/
 claude
 # Ask: "What is your name? What's in your CLAUDE.md?"
-# Verify it reads YOUR CLAUDE.md and identifies as Agent A
+# Verify it identifies as your agent with your instructions
 ```
 
-**Agent B:**
+**Person B's agent:**
 ```bash
 cd ~/peter/
 claude
 # Ask: "What is your name? What's in your CLAUDE.md?"
-# Verify it reads PETER'S CLAUDE.md and identifies as Agent B
+# Verify it reads the bootstrap CLAUDE.md and is ready to onboard Person B
 ```
 
-If both agents correctly identify themselves with different names and roles, the architecture is working. Everything from Phase 9 onward will use this structure.
+If both agents correctly identify themselves with different instructions, the architecture is working. Everything from Phase 9 onward will use this structure.
 
 -----
 
